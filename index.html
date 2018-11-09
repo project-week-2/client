@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>CV Generator</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+        crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.1/jspdf.debug.js" integrity="sha384-THVO/sM0mFD9h7dfSndI6TS0PgAGavwKvB5hAxRRvc0o9cPLohB0wb/PTA7LdUHs" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+
+    <div id="app">
+        <div class="container mt-4">
+            <h1 class="text-center">CV GENERATOR</h1>
+            <div class="row">
+                <div class="col-4">
+                    <div>
+                        <label>Picture</label>
+                        <input type="file" class="form-control" ref="file" v-on:change="handleFile()" />
+                        <button class="btn btn-warning mt-2" v-on:click="upload">Upload</button>
+                    </div>
+                    <div>
+                        <label>Your Name</label>
+                        <input type="text" class="form-control" v-model="profile.name" />
+                    </div>
+                    <div>
+                        <label>Headline</label>
+                        <input type="text" class="form-control" v-model="profile.headline" />
+                    </div>
+                    <div>
+                        <label>Objective</label>
+                        <textarea class="form-control" v-model="profile.objective"></textarea>
+                    </div>
+                    <div>
+                        <label>Profile Summary</label>
+                        <textarea class="form-control" v-model="profile.profileSummary"></textarea>
+                    </div>
+                    <div>
+                        <label>Experience</label>
+                        <textarea class="form-control" v-model="profile.experience"></textarea>
+                    </div>
+                    <div>
+                        <label>Education</label>
+                        <textarea class="form-control" v-model="profile.education"></textarea>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary mt-3" v-on:click="download">Download</button>
+                    </div>
+                </div>
+                <div class="col-8">
+                    <img v-bind:src="image" style="display: none" id="photo">
+                    <canvas id="myCanvas" width="595" height="842" style="border: 1px solid black"
+                    v-insert-text="profile" 
+                    v-line
+                    v-insert-image></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.js"></script>
+
+    <script>
+        let app = new Vue({
+            el: '#app',
+            data: {
+                profile: {
+                    name: 'Insert Name',
+                    headline: 'Insert Headline',
+                    objective: 'Insert Objective',
+                    profileSummary: 'Insert Profile',
+                    experience: 'Insert Experience',
+                    education: 'Insert Education',
+                },
+                image: '#',
+                file: ''
+            },
+            methods: {
+                handleFile() {
+                  this.file = this.$refs.file.files[0]
+                  this.file.crossOrigin = 'anonymous'
+                  console.log(this.file)
+                },
+                upload() {
+                    let formData = new FormData()
+                    formData.append("profpic", this.file)
+                    axios.post('http://35.241.81.134', formData, { headers: { 
+                        'Content-Type': 'multipart/form-data',
+                        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST",
+                        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Max-Age": "1296000"
+                        }})
+                        .then(response => {
+                            this.image = response.data.url
+                            console.log(response)
+                        })
+                        .catch(error => {
+                            console.log(error)
+                        })
+                },
+                download() {
+                    let canvas = document.getElementById('myCanvas')
+                    let imgData = canvas.toDataURL("image/png", 1.0)
+                    let pdf = new jsPDF()
+
+                    pdf.addImage(imgData, 'PNG', 0, 0)
+                    pdf.save("download.pdf")
+                }
+            },
+            directives: {
+                insertText: function (canvasElement, profile) {
+                    // Get canvas context
+                    var ctx = canvasElement.getContext("2d")
+                    // Clear the canvas
+                    ctx.clearRect(0, 0, 595, 842)
+                    // Insert stuff into canvas
+                    ctx.rect(20, 20, 200, 200)
+
+                    // User Name
+                    ctx.font = "30px Helvetica"
+                    ctx.fillText(profile.value.name, 240, 70)
+
+                    // User Headline
+                    ctx.font = "24px Helvetica"
+                    wrapText(ctx, profile.value.headline, 240, 120, 340, 25)
+                    // ctx.fillText(profile.value.headline, 240, 120)
+
+                    // User Objective
+                    ctx.font = "24px Helvetica"
+                    ctx.fillText("Objective", 40, 300)
+                    ctx.font = "16px Helvetica"
+                    let objectiveLines = profile.value.objective.split('\n')
+                    for (let i = 0; i < objectiveLines.length; i++) {
+                        ctx.fillText(objectiveLines[i], 70, 330 + (i * 15))
+                    }
+
+                    // User Profile Summary
+                    ctx.font = "24px Helvetica"
+                    ctx.fillText("Profile Summary", 40, 410)
+                    ctx.font = "16px Helvetica"
+                    let profileSummaryLines = profile.value.profileSummary.split('\n')
+                    for (let i = 0; i < profileSummaryLines.length; i++) {
+                        ctx.fillText(profileSummaryLines[i], 70, 440 + (i * 15))
+                    }
+
+                    // User Experience
+                    ctx.font = "24px Helvetica"
+                    ctx.fillText("Experience", 40, 530)
+                    ctx.font = "16px Helvetica"
+                    let experienceLines = profile.value.experience.split('\n')
+                    for (let i = 0; i < experienceLines.length; i++) {
+                        ctx.fillText(experienceLines[i], 70, 560 + (i * 15))
+                    }
+
+                    // User Education
+                    ctx.font = "24px Helvetica"
+                    ctx.fillText("Education", 40, 700)
+                    ctx.font = "16px Helvetica"
+                    let educationLines = profile.value.education.split('\n')
+                    for (let i = 0; i < educationLines.length; i++) {
+                        ctx.fillText(educationLines[i], 70, 730 + (i * 15))
+                    }
+
+                    // Wrap Text function
+                    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+                        var words = text.split(' ');
+                        var line = '';
+
+                        for (var n = 0; n < words.length; n++) {
+                            var testLine = line + words[n] + ' ';
+                            var metrics = context.measureText(testLine);
+                            var testWidth = metrics.width;
+                            if (testWidth > maxWidth && n > 0) {
+                                context.fillText(line, x, y);
+                                line = words[n] + ' ';
+                                y += lineHeight;
+                            }
+                            else {
+                                line = testLine;
+                            }
+                        }
+                        context.fillText(line, x, y);
+                    }
+                },
+                line: function (canvasElement) {
+                    var redLine = canvasElement.getContext("2d")
+                    redLine.strokeStyle = "black"
+                    redLine.stroke()
+                },
+                insertImage: function (canvasElement) {
+                    var ctx = canvasElement.getContext("2d")
+                    var img = document.getElementById("photo")
+                    ctx.drawImage(img, 20, 20, 200, 200)
+                }
+            }
+        })
+    </script>
+
+</body>
+
+</html>
