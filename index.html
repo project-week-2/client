@@ -8,7 +8,8 @@
     <title>CV Generator</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
         crossorigin="anonymous">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.1/jspdf.debug.js" integrity="sha384-THVO/sM0mFD9h7dfSndI6TS0PgAGavwKvB5hAxRRvc0o9cPLohB0wb/PTA7LdUHs" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.1/jspdf.debug.js" integrity="sha384-THVO/sM0mFD9h7dfSndI6TS0PgAGavwKvB5hAxRRvc0o9cPLohB0wb/PTA7LdUHs" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 </head>
 
 <body>
@@ -20,7 +21,7 @@
                 <div class="col-4">
                     <div>
                         <label>Picture</label>
-                        <input type="file" class="form-control" />
+                        <input type="file" class="form-control" ref="file" v-on:change="handleFile()" />
                         <button class="btn btn-warning mt-2" v-on:click="upload">Upload</button>
                     </div>
                     <div>
@@ -52,6 +53,7 @@
                     </div>
                 </div>
                 <div class="col-8">
+                    <img v-bind:src="image" style="display: none" id="photo">
                     <canvas id="myCanvas" width="595" height="842" style="border: 1px solid black"
                     v-insert-text="profile" 
                     v-line
@@ -75,10 +77,32 @@
                     experience: 'Insert Experience',
                     education: 'Insert Education',
                 },
+                image: '#',
+                file: ''
             },
             methods: {
+                handleFile() {
+                  this.file = this.$refs.file.files[0]
+                  this.file.crossOrigin = 'anonymous'
+                  console.log(this.file)
+                },
                 upload() {
-
+                    let formData = new FormData()
+                    formData.append("profpic", this.file)
+                    axios.post('http://35.241.81.134', formData, { headers: { 
+                        'Content-Type': 'multipart/form-data',
+                        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS, POST",
+                        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Max-Age": "1296000"
+                        }})
+                        .then(response => {
+                            this.image = response.data.url
+                            console.log(response)
+                        })
+                        .catch(error => {
+                            console.log(error)
+                        })
                 },
                 download() {
                     let canvas = document.getElementById('myCanvas')
